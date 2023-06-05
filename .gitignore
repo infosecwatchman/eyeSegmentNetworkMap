@@ -1,0 +1,4 @@
+/pkg/*
+/v1/*.json
+/v1/templates/test*
+/v1/*.exe

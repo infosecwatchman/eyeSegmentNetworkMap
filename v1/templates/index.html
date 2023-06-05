@@ -1,0 +1,404 @@
+<html>
+<head>
+  <style type="text/css">
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #checkbox, #timeFilter {
+      position: relative;
+      margin-bottom: 10px;
+      margin-left: 10px;
+      margin-right: 0;
+      margin-top: 15px;
+      display: inline-block;
+      float: left;
+      top: 15px;
+      font: 13px "Arial Black";
+    }
+    #container {
+      position: absolute;
+      width: 100%;
+      top: 60px;
+      bottom: 0;
+    }
+    form {
+      background-color: #9d9fb2;
+      position: relative;
+      margin-top: 15px;
+      margin-left: 10px;
+      display: inline-block;
+      width: 300px;
+      height: 44px;
+      float: left;
+      border-radius: 5px;
+      flex-direction: row;
+      align-items: center;
+    }
+    #query {
+      all: unset;
+      font: 16px "Arial Black";
+      color: #fff;
+      height: 100%;
+      width: 95%;
+      padding: 0px 10px;
+    }
+    ::placeholder {
+      color: #fff;
+      opacity: 0.7;
+    }
+    /*
+    #applied-filters {
+      margin-top: 14px;
+      padding: 1px;
+      position: relative;
+      display: inline-block;
+      float: left;
+      margin-left: 10px;
+      border: #000000;
+      background: #585a68;
+    }
+
+    #myInput {
+      box-sizing: border-box;
+      font: 16px "Arial Black";
+      background-image: url('https://img.icons8.com/ios-filled/22/000000/search--v4.png');
+      background-position: 14px 12px;
+      background-repeat: no-repeat;
+      padding: 14px 20px 12px 45px;
+      border: none;
+      border-bottom: 1px solid #ddd;
+    }
+
+    #myInput:focus {outline: 3px solid #ddd;}
+
+     */
+
+    .dropdown-content button {
+      color: black;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+      width: 225px;
+    }
+
+    .dropdown button:hover {background-color: #6e74b6;}
+    .toast{
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+    }
+  </style>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+  <script src='https://kit.fontawesome.com/a076d05399.js' crossorigin='anonymous'></script>
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.10.0/js/anychart-core.min.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.10.0/js/anychart-base.min.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.10.0/js/anychart-graph.min.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.10.0/js/anychart-data-adapter.min.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.10.0/js/anychart-ui.min.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.10.0/js/anychart-exports.min.js"></script>
+</head>
+<body>
+
+<form role="search" id="form">
+  <input type="search" id="query" name="q"
+         placeholder="Search..."
+         aria-label="Search through site content">
+</form>
+
+    <div id="checkbox">
+<label class="checkbox" >
+  <input type="checkbox" id="objectLabels" onchange="updateCheckbox()">
+  Show Object Labels
+</label>
+<label class="checkbox" >
+  <input type="checkbox" id="edgeLabels" onchange="updateCheckbox()">
+  Show Edge Labels
+</label>
+</div>
+  <div class="toast" id="myToast">
+    <div class="toast-header">
+      <strong class="me-auto" style='font-size:17px'><i class='fas fa-exclamation-circle'></i> Error in query syntax!</strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body" id="toast-text" style="color: darkred"></div>
+  </div>
+<p id="timeFilter"><strong>Traffic: Last <span class="input" id="time" style="border: 1px solid #ccc; padding: 1px 6px;" role="textbox" contenteditable>3</span> Days</strong></p>
+
+<div id="container"></div>
+<script>
+  /*
+  function addCode() {
+    document.getElementById("applied-filters").innerHTML +=
+            "<h3>TBD</h3>";
+  }
+  */
+  /*
+  const f = document.getElementById('form');
+  const q = document.getElementById('query');
+  var form = document.getElementById("form");
+  function submitted(event) {
+    event.preventDefault();
+    console.log(q.value)
+    if (q.value.includes(",")) {
+      var queryArray = q.value.split(",")
+      queryArray.forEach(function (term, index, array) {
+        console.log(term)
+      });
+    }
+    var filter = q.value.split(":")
+    switch (filter[0]) {
+      case "srcgrp":
+        break
+      case "dstgrp":
+        break
+      case "srcip":
+        break
+      case "dstip":
+        break
+      case "srcnet":
+        break
+      case "dstnet":
+        break
+      default:
+        console.log("here")
+        form.setCustomValidity("Name must be 2-8 characters.");
+        form.reportValidity();
+        break
+    }
+  }
+
+  f.addEventListener('submit', submitted);
+   */
+
+/*
+  function myFunction() {
+    document.getElementById("myDropdown").classList.toggle("show");
+  }
+
+  function filterFunction() {
+    var input, filter, ul, li, a, i;
+    input = document.getElementById("myInput");
+    filter = input.value.toUpperCase();
+    div = document.getElementById("myDropdown");
+    a = div.getElementsByTagName("button");
+    for (i = 0; i < a.length; i++) {
+      txtValue = a[i].textContent || a[i].innerText;
+      if (txtValue.toUpperCase().indexOf(filter) > -1) {
+        a[i].style.display = "";
+      } else {
+        a[i].style.display = "none";
+      }
+    }
+  }
+
+ */
+
+
+  //////////////////////////////////////////////////////////////
+  const f = document.getElementById('form');
+  const q = document.getElementById('query');
+
+  //function submitted(event) {
+  //  event.preventDefault();
+  //  const url = google + site + '+' + q.value;
+  //  const win = window.open(url, '_blank');
+  //  win.focus();
+  //}
+  function submitted(event) {
+    event.preventDefault();
+    let filters = []
+    if (q.value.includes(",")) {
+      var queryArray = q.value.split(",")
+      queryArray.forEach(function (term) {
+        filters.push(term.trim())
+      });
+    } else {
+      filters.push(q.value.trim())
+    }
+    error = false
+    errorText = ""
+    let params = {};
+    filters.forEach(function (term) {
+      var filter = term.split(":")
+    switch (filter[0]) {
+      case "srcgrp":
+        console.log(term)
+        params.srcgrp = filter[1].trim()
+        break
+      case "dstgrp":
+        console.log(term)
+        params.dstgrp = filter[1].trim()
+        break
+      case "srcip":
+        console.log(term)
+        if (ipAddressCheck(filter[1].trim())){
+          params.srcip = filter[1].trim()
+        } else {
+          error = true
+          errorText = errorText + "Error: '" + filter[1].trim() + "' is not a valid IP Address.<br>"
+        }
+        break
+      case "dstip":
+        console.log(term)
+        if (ipAddressCheck(filter[1].trim())){
+          params.dstip = filter[1].trim()
+        } else {
+          error = true
+          errorText = errorText + "Error: '" + filter[1].trim() + "' is not a valid IP Address.<br>"
+        }
+        break
+      //case "srcnet":
+      //  console.log(term)
+      //  params.srcnet = filter[1].trim()
+      //  break
+      //case "dstnet":
+      //  console.log(term)
+      //  params.dstnet = filter[1].trim()
+      //  break
+      default:
+        console.log("here")
+        error = true
+        errorText = errorText + "Error: '" + filter[0] + "' is not a valid filter.<br>"
+        break
+    }
+    });
+    if(error) {
+      document.getElementById("toast-text").innerHTML = errorText + '<a href="/documentation">Query filters documentation</a>'
+      $("#myToast").toast("show");
+    } else {
+      params.timeFilter = parseInt(document.getElementById("time").innerText)
+      console.log(params)
+      const options = {
+        method: 'POST',
+        body: JSON.stringify( params )
+      };
+      fetch( '/query', options ).then( response => response.json() );
+
+    }
+  }
+
+  function ipAddressCheck(ipAddress)
+  {
+    var regEx = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    if(ipAddress.match(regEx))
+    {
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+
+  f.addEventListener('submit', submitted);
+
+  ///////////////////////////////////////////////////////////////
+
+  function updateCheckbox() {
+    chart.edges().labels().enabled(document.getElementById("edgeLabels").checked);
+    chart.nodes().labels().enabled(document.getElementById("objectLabels").checked);
+  }
+  var chart;
+  anychart.onDocumentReady(function () {
+    anychart.data.loadJsonFile("/data.json", function (data) {
+      // create a chart from the loaded data
+      chart = anychart.graph(data);
+      // set the title
+      chart.title("Network Graph showing network connection data.");
+      // configure the labels of nodes
+      chart.nodes().labels().format("{%id}");
+      chart.nodes().labels().fontSize(12);
+      chart.nodes().labels().fontWeight(600);
+      var edges = chart.edges();
+      chart.edges().arrows({
+        enabled: true,
+        size: 7,
+        position: '50%'
+      });
+      chart.interactivity().edges(true);
+      var normalConfig = {stroke: '#FFDE05'};
+      var hoveredConfig = {stroke: '#AC9603'};
+      var selectedConfig = {stroke: '#887603', labels: {enabled: true}};
+
+      edges.normal(normalConfig);
+      edges.hovered(hoveredConfig);
+      edges.selected(selectedConfig);
+
+
+      //console.log(this.getData("from")+'on Test '+this.getData("Port"))
+      chart.nodes().tooltip().useHtml(true);
+      chart.nodes().tooltip().format(function (){
+        var format = ''
+        var nodeDetails = JSON.stringify(this["mc"]["gg"]["f"])
+        //console.log(nodeDetails)
+        var parsedJson = JSON.parse(nodeDetails)
+        //console.log(parsedJson)
+        var zones = ''
+        for (const key in parsedJson) {
+          if (key.includes('Zone_')) {
+            zones = zones + parsedJson[key] +' -> '
+          }
+        }
+        zones = zones.slice(0, zones.length - 1)
+        zones = zones.slice(0, zones.length - 1)
+        zones = zones.slice(0, zones.length - 1)
+        format = parsedJson["IP"] +'<br />'
+        if (parsedJson["DNS_Name"] != "") {
+          format = format + parsedJson["DNS_Name"] +'<br />'
+        }
+        format = format + "Group: " + parsedJson["Zone"] +'<br />'
+        format = format + '<br />'+zones
+        return format
+      });
+      chart.nodes().tooltip().hideDelay(1000);
+      chart.edges().tooltip().useHtml(true);
+      chart.interactivity().hoverGap(30);
+      var tooltipConfig = {
+        title: true,
+        separator: true,
+        titleFormat: '{%from} -> {%to}',
+        enabled: true
+      };
+      chart.edges().tooltip(tooltipConfig);
+      chart.edges().tooltip().hideDelay(1000);
+      chart.edges().tooltip().format(function () {
+        var format = ''
+        var connections = this.getData('connections');
+        connections.forEach(function (data, builtin, dom) {
+          format = '<p>'+data['Service_Name']+' on Port '+data['Port']+' with '+data['#Connections']+' occurrences'+'<br /><span style="padding-left: 20px; color: #d7b0b0;">First seen on '+data['First_Seen']+'<br /></span><span style="padding-left: 30px; color: #d7b0b0;">Last seen on '+data['Last_Seen']+'&nbsp;</span></p>' + format
+        });
+        return format
+      });
+
+      // access nodes
+      var nodes = chart.nodes();
+
+      // set the size of nodes
+      nodes.normal().height(30);
+      nodes.hovered().height(35);
+      nodes.selected().height(37);
+
+      // set the fill of nodes
+      nodes.normal().fill("#ffa000");
+      nodes.hovered().fill("white");
+      nodes.selected().fill("#ffa000");
+
+      // set the stroke of nodes
+      nodes.normal().stroke(null);
+      nodes.hovered().stroke("#333333", 3);
+      nodes.selected().stroke("#333333", 3);
+      // draw the chart
+      chart.container("container").draw();
+    });
+  });
+</script>
+</body>
+</html>
