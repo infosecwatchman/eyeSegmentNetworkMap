@@ -12,27 +12,23 @@
       margin-bottom: 10px;
       margin-left: 10px;
       margin-right: 0;
-      margin-top: 15px;
       display: inline-block;
       float: left;
-      top: 15px;
+      top: 5px;
       font: 13px "Arial Black";
     }
     #container {
-      position: absolute;
+      position: relative;
       width: 100%;
-      top: 60px;
       bottom: 0;
+      top: 30px;
     }
     form {
-      background-color: #9d9fb2;
       position: relative;
-      margin-top: 15px;
-      margin-left: 10px;
-      display: inline-block;
-      width: 300px;
       height: 44px;
-      float: left;
+      margin-top: 30px;
+      padding-left: 20px;
+      padding-right: 20px;
       border-radius: 5px;
       flex-direction: row;
       align-items: center;
@@ -40,13 +36,17 @@
     #query {
       all: unset;
       font: 16px "Arial Black";
-      color: #fff;
       height: 100%;
-      width: 95%;
-      padding: 0px 10px;
+      width: 100%;
+      position: relative;
+      z-index: 3;
+      border: 1px solid gray;
+      border-radius: 3px;
+      padding: 5px;
     }
+
     ::placeholder {
-      color: #fff;
+      color: black;
       opacity: 0.7;
     }
     /*
@@ -84,13 +84,91 @@
       width: 225px;
     }
 
-    .dropdown button:hover {background-color: #6e74b6;}
+    .dropdown button:hover {
+      background-color: #6e74b6;
+    }
+
     .toast{
       position: absolute;
       top: 10px;
       right: 10px;
-      z-index: 1000;
+      z-index: -1; /* Blocking content. Now setting z index in jquery below */
     }
+    .input-container {
+      position: relative;
+      background-color: #ffffff;
+      width: 16em;
+      height: 3em;
+      border-radius: 5px;
+      border: 1px solid black;
+      float: left;
+      display: flex;
+    }
+
+    #suggestion {
+      width: inherit;
+      height: inherit;
+      position: absolute;
+      z-index: 1;
+      top: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      font: 16px "Arial Black";  
+      font-weight: 400;   
+      color: gray;
+    }
+    #headerSelect {
+      float: left;
+      margin-top: 0px;
+      margin-left: 40px;
+
+    }
+    .suggestionDropdown {
+      float: none;
+    }
+    div.suggestionDropdown ul {
+      display: none;
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1;
+    }
+    div.suggestionDropdown ul.has-suggestions {
+      display: block;
+    }
+    div.suggestionDropdown ul li {
+      padding: 10px;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.2);
+      z-index: 1;
+    }
+    .search-container {
+      width: 100%;
+      position: relative;
+      margin: 5px auto;
+      z-index: 1;
+    }
+    .search-container input,
+    .search-container .suggestionDropdown {
+      width: 100%;
+      background: #fff;
+      text-align: left;
+    }
+    .search-container input {
+      background: rgba(255, 255, 255, 0.2);
+      height: 60px;
+      padding: 0 10px;
+    }
+    .search-container .suggestionDropdown {
+      position: absolute;
+      top: 60px;
+    }
+
   </style>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
@@ -105,23 +183,45 @@
   <script src="https://cdn.anychart.com/releases/8.10.0/js/anychart-exports.min.js"></script>
 </head>
 <body>
-
-<form role="search" id="form">
-  <input type="search" id="query" name="q"
-         placeholder="Search..."
-         aria-label="Search through site content">
-</form>
-
+  <div>
+    <form role="search" id="form">
+      <div class="search-container">
+        <!--<div class="input-container">-->
+          <input type="search" id="query" name="query"
+                placeholder="Search..."
+                aria-label="Search through site content">
+          <!--<span id="suggestion"></span>-->
+          <div class="suggestionDropdown">
+            <ul></ul>
+          </div>
+        <!--</div>-->
+      </div>
+      
+            
+    </form>
+    <div id="headerSelect">
+      <select onchange="appendInput(event)" name="queryType">
+        <option select value="">Add Search Fields</option>
+        <option select value="srcip:">Source IP</option>
+        <option value="dstip:">Destination IP</option>
+        <option value="srcgrp:">Source Group</option>
+        <option value="dstgrp:">Destination Group</option>
+      </select>
+    </div>
     <div id="checkbox">
-<label class="checkbox" >
-  <input type="checkbox" id="objectLabels" onchange="updateCheckbox()">
-  Show Object Labels
-</label>
-<label class="checkbox" >
-  <input type="checkbox" id="edgeLabels" onchange="updateCheckbox()">
-  Show Edge Labels
-</label>
-</div>
+      
+      <label class="checkbox" >
+        <input type="checkbox" id="objectLabels" onchange="updateCheckbox()">
+        Show Object Labels
+      </label>
+      <label class="checkbox" >
+        <input type="checkbox" id="edgeLabels" onchange="updateCheckbox()">
+        Show Edge Labels
+      </label>
+    </div>
+  </div>
+  <p id="timeFilter"><strong>Traffic: Last <span class="input" id="time" style="border: 1px solid #ccc; padding: 1px 6px;" role="textbox" contenteditable>3</span> Days</strong></p>
+  
   <div class="toast" id="myToast">
     <div class="toast-header">
       <strong class="me-auto" style='font-size:17px'><i class='fas fa-exclamation-circle'></i> Error in query syntax!</strong>
@@ -129,10 +229,10 @@
     </div>
     <div class="toast-body" id="toast-text" style="color: darkred"></div>
   </div>
-<p id="timeFilter"><strong>Traffic: Last <span class="input" id="time" style="border: 1px solid #ccc; padding: 1px 6px;" role="textbox" contenteditable>3</span> Days</strong></p>
+  
 
-<div id="container"></div>
-<script>
+  <div id="container"></div>
+  <script>
   /*
   function addCode() {
     document.getElementById("applied-filters").innerHTML +=
@@ -174,7 +274,7 @@
     }
   }
 
-  f.addEventListener('submit', submitted);
+  formInput.addEventListener('submit', submitted);
    */
 
 /*
@@ -202,26 +302,112 @@
 
 
   //////////////////////////////////////////////////////////////
-  const f = document.getElementById('form');
-  const q = document.getElementById('query');
+  const formElement = document.getElementById('form');
+  const formInput = document.getElementById('query');
+  const formSuggestion = document.getElementById('suggestion');
+  const formSelect = document.getElementById('headerSelect');
+  const suggestions = document.querySelector('.suggestionDropdown ul');
+  const suggestionList = document.querySelector('.suggestionDropdown ul li');
 
+  const words = [
+      "srcip:,",
+      "srcgrp:,",
+      "dstip:,",
+      "dstgrp:,"
+    ]
   //function submitted(event) {
   //  event.preventDefault();
   //  const url = google + site + '+' + q.value;
   //  const win = window.open(url, '_blank');
   //  win.focus();
   //}
+  function appendInput() {
+    if (formSelect.children[0].value) {
+      formInput.value = formInput.value + formSelect.children[0].value + ",";
+    }
+  }
+
+  function predictText() {
+    let results = []
+    
+
+    string = formInput.value.toLowerCase()
+    if (string.includes(',')) {
+      string = string.split(",").pop()
+      console.log(string)
+    }
+    for (i=0;i<4;i++) {
+      if (words[i].startsWith(string) && string !== "") {
+        //formSuggestion.innerText = words[i]
+        results.push(words[i])
+      } else if (string == "") {
+        //formSuggestion.innerText = ""
+      }
+    }
+    showSuggestions(results, string)
+
+  }
+
+  function showSuggestions(results, inputVal) {
+    
+    suggestions.innerHTML = '';
+
+    if (results.length > 0) {
+      for (i = 0; i < results.length; i++) {
+        let item = results[i];
+        // Highlights only the first match
+        // TODO: highlight all matches
+        const match = item.match(new RegExp(inputVal, 'i'));
+        item = item.replace(match[0], `<strong>${match[0]}</strong>`);
+        suggestions.innerHTML += `<li class="suggestItem">${item}</li>`;
+      }
+      suggestions.classList.add('has-suggestions');
+      items = document.getElementsByClassName("suggestItem")//.addEventListener('click', useSuggestion)
+      for(i=0;i<items.length;i++) {
+        items[i].addEventListener('click', useSuggestion)
+      }
+
+
+    } else {
+      results = [];
+      suggestions.innerHTML = '';
+      suggestions.classList.remove('has-suggestions');
+    }
+}
+
+function useSuggestion(e) {
+  if (formInput.value.includes(',')){
+    string = formInput.value.split(",")
+  
+    string = string.slice(0, -1)
+    console.log(string)
+    formInput.value = string.toString() + "," + e.target.innerText
+
+  } else {
+	  formInput.value = e.target.innerText;
+  }
+	formInput.focus();
+	suggestions.innerHTML = '';
+	suggestions.classList.remove('has-suggestions');
+}
+/*
+  window.onload = () => {
+    formInput.value = "";
+    formSuggestion.innerText = "";
+  };
+*/
   function submitted(event) {
     event.preventDefault();
     let filters = []
-    if (q.value.includes(",")) {
-      var queryArray = q.value.split(",")
+    if (formInput.value.includes(",")) {
+      var queryArray = formInput.value.split(",")
       queryArray.forEach(function (term) {
         filters.push(term.trim())
       });
     } else {
-      filters.push(q.value.trim())
+      filters.push(formInput.value.trim())
     }
+  
     error = false
     errorText = ""
     let params = {};
@@ -272,6 +458,8 @@
     if(error) {
       document.getElementById("toast-text").innerHTML = errorText + '<a href="/documentation">Query filters documentation</a>'
       $("#myToast").toast("show");
+      $(".toast").css("z-index", "1000");
+
     } else {
       params.timeFilter = parseInt(document.getElementById("time").innerText)
       console.log(params)
@@ -297,8 +485,9 @@
     }
   }
 
-
-  f.addEventListener('submit', submitted);
+  formInput.addEventListener("input", predictText);
+  formElement.addEventListener('submit', submitted);
+  
 
   ///////////////////////////////////////////////////////////////
 
@@ -306,6 +495,7 @@
     chart.edges().labels().enabled(document.getElementById("edgeLabels").checked);
     chart.nodes().labels().enabled(document.getElementById("objectLabels").checked);
   }
+  
   var chart;
   anychart.onDocumentReady(function () {
     anychart.data.loadJsonFile("/data.json", function (data) {
