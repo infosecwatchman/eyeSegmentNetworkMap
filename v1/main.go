@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/Jeffail/gabs/v2"
 	"github.com/gorilla/mux"
 	"github.com/infosecwatchman/eyeSegmentAPI/eyeSegmentAPI"
 	"html/template"
@@ -37,6 +36,7 @@ func testDataPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func dataPage(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s accessing /data", r.RemoteAddr)
 	fmt.Fprint(w, DataStream())
 }
 
@@ -108,14 +108,17 @@ func Query(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println(payload)
 	eyeSegmentAPI.SetFilter(payload)
-	eyeSegmentAPI.GetFilter()
-	dataContainer, err := gabs.ParseJSON(eyeSegmentAPI.GetMatrixData())
-	if err != nil {
-		log.Println(err)
-	}
-	for _, data := range dataContainer.S("data").Children() {
-		log.Println(data.Data())
-	}
+	fmt.Println(eyeSegmentAPI.GetFilter())
+	/*
+		dataContainer, err := gabs.ParseJSON(eyeSegmentAPI.GetMatrixData())
+		if err != nil {
+			log.Println(err)
+		}
+		for _, data := range dataContainer.S("data").Children() {
+			log.Println(data.Data())
+		}
+	*/
+	fmt.Fprint(w, eyeSegmentAPI.GetFilter())
 
 }
 

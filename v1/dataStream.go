@@ -31,7 +31,49 @@ type connectData struct {
 }
 
 func DataStream() string {
-	return strings.ReplaceAll(CSVtoJSON(eyeSegmentAPI.GetCSVData("g_1581256372551837514", "g_4669178154877531169")).String(), `\"`, "")
+	log.Println("Running DataStream")
+	MatrixData := gabs.New()
+	MatrixData.Array("edges")
+	MatrixData.Array("nodes")
+	dataContainer, err := gabs.ParseJSON(eyeSegmentAPI.GetMatrixData())
+	if err != nil {
+		log.Println(err)
+	}
+	if dataContainer.ExistsP("data.0.srcZone") {
+		for _, data := range dataContainer.S("data").Children() {
+			jsonData := CSVtoJSON(eyeSegmentAPI.GetCSVData(trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String())))
+			nodes1 := MatrixData.Path("nodes").Children()
+			nodes2 := jsonData.Path("nodes").Children()
+
+			// Create a new container to store the merged edges and nodes
+			mergedContainer := gabs.New()
+
+			var edges1, edges2 []edge
+			json.Unmarshal(MatrixData.S("edges").EncodeJSON(), &edges1)
+			json.Unmarshal(jsonData.S("edges").EncodeJSON(), &edges2)
+			for _, jsonEdge := range edges2 {
+				edges1 = append(edges1, jsonEdge)
+			}
+			mergedContainer.Array("edges")
+			marshalledEdges, _ := json.Marshal(edges1)
+			mergedEdgesContainer, _ := gabs.ParseJSON(marshalledEdges)
+			mergedContainer.Set(mergedEdgesContainer.Data(), "edges")
+
+			// Merge the nodes arrays
+			mergedContainer.Array("nodes")
+			for _, node := range nodes1 {
+				mergedContainer.ArrayAppend(node.Data(), "nodes")
+			}
+			for _, node := range nodes2 {
+				mergedContainer.ArrayAppend(node.Data(), "nodes")
+			}
+			MatrixData = mergedContainer
+		}
+	}
+	//fmt.Println(strings.ReplaceAll(CSVtoJSON(eyeSegmentAPI.GetCSVData("g_2718281828459045235", "g_1234567890123456789")).String(), `\"`, ""))
+	//return strings.ReplaceAll(CSVtoJSON(eyeSegmentAPI.GetCSVData("g_2718281828459045235", "g_1234567890123456789")).String(), `\"`, "")
+	//fmt.Println(MatrixData.String())
+	return strings.ReplaceAll(MatrixData.String(), `\"`, "")
 }
 
 func trimQuote(s string) string {

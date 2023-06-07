@@ -468,7 +468,14 @@ function useSuggestion(e) {
         body: JSON.stringify( params )
       };
       fetch( '/query', options ).then( response => response.json() );
-
+      //chart.container("container").draw();
+      setTimeout(function() {
+        chart.data([
+          {x: "A", value: 200},
+          {x: "B", value: 300},
+          {x: "C", value: 250},
+        ])
+      } ,1500);
     }
   }
 
@@ -498,7 +505,10 @@ function useSuggestion(e) {
   
   var chart;
   anychart.onDocumentReady(function () {
-    anychart.data.loadJsonFile("/data.json", function (data) {
+    loadchart()
+  });
+  function loadchart() {
+    anychart.data.loadJsonFile("/data", function (data) {
       // create a chart from the loaded data
       chart = anychart.graph(data);
       // set the title
@@ -588,7 +598,8 @@ function useSuggestion(e) {
       // draw the chart
       chart.container("container").draw();
     });
-  });
+  }
+
 </script>
 </body>
 </html>
