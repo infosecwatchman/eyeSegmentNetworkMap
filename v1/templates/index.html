@@ -337,7 +337,7 @@
       console.log(string)
     }
     for (i=0;i<4;i++) {
-      if (words[i].startsWith(string) && string !== "") {
+      if (words[i].includes(string) && string !== "") {
         //formSuggestion.innerText = words[i]
         results.push(words[i])
       } else if (string == "") {
