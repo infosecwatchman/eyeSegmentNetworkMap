@@ -22,6 +22,19 @@
       width: 100%;
       bottom: 0;
       top: 30px;
+      padding: 5px;
+    }
+    .progress-container {
+      position: relative;
+      z-index: -1;
+      padding-top: 10%;
+      width: 100%;
+      display: none;
+      justify-content: center;
+    }
+    .progress {
+      width: 25%;
+      
     }
     form {
       position: relative;
@@ -184,6 +197,7 @@
 </head>
 <body>
   <div>
+   
     <form role="search" id="form">
       <div class="search-container">
         <!--<div class="input-container">-->
@@ -231,7 +245,13 @@
   </div>
   
 
-  <div id="container"></div>
+  <div id="container">
+    <div class="progress-container">
+      <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+    </div>
+  </div>
   <script>
   /*
   function addCode() {
@@ -396,6 +416,16 @@ function useSuggestion(e) {
     formSuggestion.innerText = "";
   };
 */
+  function progressBar(job){
+    progressContainer = document.getElementsByClassName("progress-container")[0]
+    if (job === true) {
+      progressContainer.style.display = "flex"
+    } else if (job === false) {
+      progressContainer.style.display = "none"
+    } else {
+      return undefined
+    }
+  }
   function submitted(event) {
     event.preventDefault();
     let filters = []
@@ -407,7 +437,7 @@ function useSuggestion(e) {
     } else {
       filters.push(formInput.value.trim())
     }
-  
+    progressBar(true)
     error = false
     errorText = ""
     let params = {};
@@ -596,6 +626,7 @@ function useSuggestion(e) {
       nodes.hovered().stroke("#333333", 3);
       nodes.selected().stroke("#333333", 3);
       // draw the chart
+      progressBar(false)
       chart.container("container").draw();
     });
   }
