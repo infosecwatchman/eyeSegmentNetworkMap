@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -11,7 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 type edge struct {
@@ -34,52 +34,49 @@ type connectData struct {
 func DataStream() string {
 	log.Println("Running DataStream")
 	MatrixData := gabs.New()
-	MatrixData.Array("edges")
-	MatrixData.Array("nodes")
 	dataContainer, err := gabs.ParseJSON(eyeSegmentAPI.GetMatrixData())
 	if err != nil {
 		log.Println(err)
 	}
+	var headers []string
+	var concatenatedData [][]string
 	if dataContainer.ExistsP("data.0.srcZone") {
 		for count, data := range dataContainer.S("data").Children() {
 			CSVData := eyeSegmentAPI.GetCSVData(trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String()))
-			jsonData := CSVtoJSON(CSVData)
-			waitgroup := sync.WaitGroup{}
-			for _, node := range jsonData.S("nodes").Children() {
-				waitgroup.Add(1)
-				go func(node *gabs.Container) {
-					defer waitgroup.Done()
-					if !strings.Contains(MatrixData.S("nodes").String(), node.String()) {
-						fmt.Printf("Adding %s \n", node.String())
-						err = MatrixData.ArrayConcat(node, "nodes")
-						if err != nil {
-							log.Println(err)
-						}
-					}
-				}(node)
+			csvdata := csv.NewReader(CSVData)
+			records, err := csvdata.ReadAll()
+			if err != nil {
+				log.Fatalln(err)
 			}
-			waitgroup.Wait()
-			/*
-				for _, edge1 := range jsonData.S("edges").Children() {
-					waitgroup.Add(1)
-					go func(edge1 *gabs.Container) {
-						defer waitgroup.Done()
-						if !strings.Contains(MatrixData.S("edges").String(), edge1.String()) {
-							err = MatrixData.ArrayConcat(edge1, "edges")
-							if err != nil {
-								log.Println(err)
-							}
-						}
-					}(edge1)
-					waitgroup.Wait()
+			for rownum, row := range records {
+				if rownum == 0 {
+					if len(row) > len(headers) {
+						headers = row
+					}
+				} else {
+					concatenatedData = append(concatenatedData, row)
 				}
-
-			*/
+			}
 			fmt.Printf("Added %s to %s ||| %d out of %d complete.\n", trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String()), count+1, len(dataContainer.S("data").Children()))
-			//fmt.Println("###########")
-			//fmt.Println(MatrixData.String())
 		}
-
+		var buffer bytes.Buffer
+		csvData := csv.NewWriter(&buffer)
+		err = csvData.Write(headers)
+		if err != nil {
+			fmt.Println(err)
+		}
+		for _, rows := range concatenatedData {
+			err = csvData.Write(rows)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+		csvData.Flush()
+		if err := csvData.Error(); err != nil {
+			panic(err)
+		}
+		fmt.Println(buffer.String())
+		MatrixData = CSVtoJSON(strings.NewReader(buffer.String()))
 	}
 	fmt.Println("exiting Datastream function.")
 	fmt.Println(MatrixData.String())
