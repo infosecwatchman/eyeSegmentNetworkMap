@@ -12,6 +12,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 type edge struct {
@@ -41,24 +43,31 @@ func DataStream() string {
 	var headers []string
 	var concatenatedData [][]string
 	if dataContainer.ExistsP("data.0.srcZone") {
+		start := time.Now()
+		waitgroup := sync.WaitGroup{}
 		for count, data := range dataContainer.S("data").Children() {
-			CSVData := eyeSegmentAPI.GetCSVData(trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String()))
-			csvdata := csv.NewReader(CSVData)
-			records, err := csvdata.ReadAll()
-			if err != nil {
-				log.Fatalln(err)
-			}
-			for rownum, row := range records {
-				if rownum == 0 {
-					if len(row) > len(headers) {
-						headers = row
-					}
-				} else {
-					concatenatedData = append(concatenatedData, row)
+			waitgroup.Add(1)
+			go func(data *gabs.Container, count int) {
+				defer waitgroup.Done()
+				CSVData := eyeSegmentAPI.GetCSVData(trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String()))
+				csvdata := csv.NewReader(CSVData)
+				records, err := csvdata.ReadAll()
+				if err != nil {
+					log.Fatalln(err)
 				}
-			}
-			fmt.Printf("Added %s to %s ||| %d out of %d complete.\n", trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String()), count+1, len(dataContainer.S("data").Children()))
+				for rownum, row := range records {
+					if rownum == 0 {
+						if len(row) > len(headers) {
+							headers = row
+						}
+					} else {
+						concatenatedData = append(concatenatedData, row)
+					}
+				}
+				fmt.Printf("Added %s to %s ||| %d out of %d complete.\n", trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String()), count+1, len(dataContainer.S("data").Children()))
+			}(data, count)
 		}
+		waitgroup.Wait()
 		var buffer bytes.Buffer
 		csvData := csv.NewWriter(&buffer)
 		err = csvData.Write(headers)
@@ -75,8 +84,10 @@ func DataStream() string {
 		if err := csvData.Error(); err != nil {
 			panic(err)
 		}
-		fmt.Println(buffer.String())
+		fmt.Println("Ready to convert")
+		log.Println(time.Since(start))
 		MatrixData = CSVtoJSON(strings.NewReader(buffer.String()))
+		fmt.Println("Done processing")
 	}
 	fmt.Println("exiting Datastream function.")
 	fmt.Println(MatrixData.String())
