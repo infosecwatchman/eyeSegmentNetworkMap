@@ -17,7 +17,7 @@
       top: 5px;
       font: 13px "Arial Black";
     }
-    #container {
+    #contain {
       position: relative;
       width: 100%;
       bottom: 0;
@@ -245,7 +245,7 @@
   </div>
   
 
-  <div id="container">
+  <div id="contain">
     <div class="progress-container">
       <div class="progress">
         <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
@@ -418,9 +418,17 @@ function useSuggestion(e) {
 */
   function progressBar(job){
     progressContainer = document.getElementsByClassName("progress-container")[0]
+    anyChartObject = document.getElementsByClassName("anychart-ui-support")[0]
+    
     if (job === true) {
+      if (anyChartObject) {
+        anyChartObject.style.display = "none"
+      }
       progressContainer.style.display = "flex"
     } else if (job === false) {
+      if (anyChartObject) {
+        anyChartObject.style.display = "block"
+      }
       progressContainer.style.display = "none"
     } else {
       return undefined
@@ -500,7 +508,7 @@ function useSuggestion(e) {
       fetch( '/query', options ).then( response => response.json() );
       //chart.container("container").draw();
       setTimeout(function() {
-        chart.data([
+        anychart.data.set([
           {x: "A", value: 200},
           {x: "B", value: 300},
           {x: "C", value: 250},
@@ -533,14 +541,16 @@ function useSuggestion(e) {
     chart.nodes().labels().enabled(document.getElementById("objectLabels").checked);
   }
   
-  var chart;
   anychart.onDocumentReady(function () {
+    progressBar(true)
     loadchart()
   });
   function loadchart() {
     anychart.data.loadJsonFile("/data", function (data) {
       // create a chart from the loaded data
       chart = anychart.graph(data);
+
+      chart.container("contain");
       // set the title
       chart.title("Network Graph showing network connection data.");
       // configure the labels of nodes
@@ -607,15 +617,18 @@ function useSuggestion(e) {
         });
         return format
       });
-
+      
+     
+  
+      
       // access nodes
       var nodes = chart.nodes();
-
+      
       // set the size of nodes
       nodes.normal().height(30);
       nodes.hovered().height(35);
       nodes.selected().height(37);
-
+ 
       // set the fill of nodes
       nodes.normal().fill("#ffa000");
       nodes.hovered().fill("white");
@@ -625,9 +638,12 @@ function useSuggestion(e) {
       nodes.normal().stroke(null);
       nodes.hovered().stroke("#333333", 3);
       nodes.selected().stroke("#333333", 3);
+
       // draw the chart
-      progressBar(false)
-      chart.container("container").draw();
+      progressBar(false);
+      chart.draw();
+      
+  
     });
   }
 
