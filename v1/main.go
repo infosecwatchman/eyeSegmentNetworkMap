@@ -45,11 +45,7 @@ func FSAuth(host, username, password string) bool {
 	eyeSegmentAPI.FSApplianceFQDN = host
 	eyeSegmentAPI.FSpassword = password
 	eyeSegmentAPI.FSLogin()
-	if eyeSegmentAPI.ConnectTest() {
-		return true
-	} else {
-		return false
-	}
+	return eyeSegmentAPI.ConnectTest()
 }
 
 func basicAuth(next http.HandlerFunc) http.HandlerFunc {
