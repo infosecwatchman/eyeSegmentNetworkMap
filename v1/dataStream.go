@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type edge struct {
@@ -40,39 +41,49 @@ func DataStream() string {
 		log.Println(err)
 	}
 	if dataContainer.ExistsP("data.0.srcZone") {
-		for _, data := range dataContainer.S("data").Children() {
-			jsonData := CSVtoJSON(eyeSegmentAPI.GetCSVData(trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String())))
-			nodes1 := MatrixData.Path("nodes").Children()
-			nodes2 := jsonData.Path("nodes").Children()
-
-			// Create a new container to store the merged edges and nodes
-			mergedContainer := gabs.New()
-
-			var edges1, edges2 []edge
-			json.Unmarshal(MatrixData.S("edges").EncodeJSON(), &edges1)
-			json.Unmarshal(jsonData.S("edges").EncodeJSON(), &edges2)
-			for _, jsonEdge := range edges2 {
-				edges1 = append(edges1, jsonEdge)
+		for count, data := range dataContainer.S("data").Children() {
+			CSVData := eyeSegmentAPI.GetCSVData(trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String()))
+			jsonData := CSVtoJSON(CSVData)
+			waitgroup := sync.WaitGroup{}
+			for _, node := range jsonData.S("nodes").Children() {
+				waitgroup.Add(1)
+				go func(node *gabs.Container) {
+					defer waitgroup.Done()
+					if !strings.Contains(MatrixData.S("nodes").String(), node.String()) {
+						fmt.Printf("Adding %s \n", node.String())
+						err = MatrixData.ArrayConcat(node, "nodes")
+						if err != nil {
+							log.Println(err)
+						}
+					}
+				}(node)
 			}
-			mergedContainer.Array("edges")
-			marshalledEdges, _ := json.Marshal(edges1)
-			mergedEdgesContainer, _ := gabs.ParseJSON(marshalledEdges)
-			mergedContainer.Set(mergedEdgesContainer.Data(), "edges")
+			waitgroup.Wait()
+			/*
+				for _, edge1 := range jsonData.S("edges").Children() {
+					waitgroup.Add(1)
+					go func(edge1 *gabs.Container) {
+						defer waitgroup.Done()
+						if !strings.Contains(MatrixData.S("edges").String(), edge1.String()) {
+							err = MatrixData.ArrayConcat(edge1, "edges")
+							if err != nil {
+								log.Println(err)
+							}
+						}
+					}(edge1)
+					waitgroup.Wait()
+				}
 
-			// Merge the nodes arrays
-			mergedContainer.Array("nodes")
-			for _, node := range nodes1 {
-				mergedContainer.ArrayAppend(node.Data(), "nodes")
-			}
-			for _, node := range nodes2 {
-				mergedContainer.ArrayAppend(node.Data(), "nodes")
-			}
-			MatrixData = mergedContainer
+			*/
+			fmt.Printf("Added %s to %s ||| %d out of %d complete.\n", trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String()), count+1, len(dataContainer.S("data").Children()))
+			//fmt.Println("###########")
+			//fmt.Println(MatrixData.String())
 		}
+
 	}
-	//fmt.Println(strings.ReplaceAll(CSVtoJSON(eyeSegmentAPI.GetCSVData("g_2718281828459045235", "g_1234567890123456789")).String(), `\"`, ""))
-	//return strings.ReplaceAll(CSVtoJSON(eyeSegmentAPI.GetCSVData("g_2718281828459045235", "g_1234567890123456789")).String(), `\"`, "")
-	//fmt.Println(MatrixData.String())
+	fmt.Println("exiting Datastream function.")
+	fmt.Println(MatrixData.String())
+
 	return strings.ReplaceAll(MatrixData.String(), `\"`, "")
 }
 
