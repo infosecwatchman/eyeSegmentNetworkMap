@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Jeffail/gabs/v2"
+	"github.com/cheggaaa/pb/v3"
 	"github.com/infosecwatchman/eyeSegmentAPI/eyeSegmentAPI"
+	"golang.org/x/exp/slices"
 	"io"
 	"log"
 	"regexp"
@@ -40,10 +42,9 @@ func DataStream() string {
 	if err != nil {
 		log.Println(err)
 	}
-	var headers []string
+	var columnNamesMaster []string
 	var concatenatedData [][]string
 	if dataContainer.ExistsP("data.0.srcZone") {
-		start := time.Now()
 		waitgroup := sync.WaitGroup{}
 		for count, data := range dataContainer.S("data").Children() {
 			waitgroup.Add(1)
@@ -55,26 +56,94 @@ func DataStream() string {
 				if err != nil {
 					log.Fatalln(err)
 				}
+
 				for rownum, row := range records {
 					if rownum == 0 {
-						if len(row) > len(headers) {
-							headers = row
+						if len(columnNamesMaster) == 0 {
+							columnNamesMaster = row
+						} else {
+							for columnNum, cell := range row {
+								if !slices.Contains(columnNamesMaster, cell) {
+									if strings.Contains(cell, "Level") {
+										level, _ := strconv.Atoi(strings.Split(cell, "Level_")[1])
+										index := slices.Index(columnNamesMaster, fmt.Sprintf("%sLevel_%d", strings.Split(cell, "Level_")[0], level-1))
+										columnNamesMaster = slices.Insert(columnNamesMaster, index+1, cell)
+									} else {
+										columnNamesMaster[columnNum] = cell
+									}
+								}
+							}
 						}
-					} else {
-						concatenatedData = append(concatenatedData, row)
+						break
 					}
 				}
-				fmt.Printf("Added %s to %s ||| %d out of %d complete.\n", trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String()), count+1, len(dataContainer.S("data").Children()))
 			}(data, count)
 		}
 		waitgroup.Wait()
+		fmt.Println(columnNamesMaster)
+		bar := pb.StartNew(len(dataContainer.S("data").Children())).SetTemplate(pb.Simple).SetRefreshRate(100 * time.Millisecond)
+		for count, data := range dataContainer.S("data").Children() {
+			waitgroup.Add(1)
+			go func(data *gabs.Container, count int) {
+				defer waitgroup.Done()
+				CSVData := eyeSegmentAPI.GetCSVData(trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String()))
+				csvdata := csv.NewReader(CSVData)
+				records, err := csvdata.ReadAll()
+				if err != nil {
+					log.Fatalln(err)
+				}
+				columnNamesTemp := make([]string, len(columnNamesMaster))
+				for rownum, row := range records {
+					if rownum == 0 {
+						columnNamesTemp = row
+					} else {
+						temprow := make([]string, len(columnNamesMaster))
+						for cellColumnNum, cell := range row {
+							temprow = slices.Insert(temprow, slices.Index(columnNamesMaster, columnNamesTemp[cellColumnNum]), cell)
+						}
+						concatenatedData = append(concatenatedData, temprow)
+					}
+				}
+				//tracker++
+				//fmt.Printf("Added %s to %s ||| %d out of %d complete.\n", trimQuote(data.S("srcZone").String()), trimQuote(data.S("dstZone").String()), tracker, len(dataContainer.S("data").Children()))
+				bar.Increment()
+			}(data, count)
+		}
+		waitgroup.Wait()
+		for i := 0; i <= 50; i++ {
+			if bar.Current() == int64(len(dataContainer.S("data").Children())) {
+				bar.Finish()
+				break
+			}
+			time.Sleep(5 * time.Millisecond)
+		}
+		waitgroup.Wait()
 		var buffer bytes.Buffer
+		/*
+			fmt.Println("Creating file.")
+			file, err := os.Create("result.csv")
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer file.Close()
+		*/
 		csvData := csv.NewWriter(&buffer)
-		err = csvData.Write(headers)
+		//defer csvData.Flush()
+		fmt.Println("writing headers")
+		err = csvData.Write(columnNamesMaster)
 		if err != nil {
 			fmt.Println(err)
 		}
 		for _, rows := range concatenatedData {
+			if len(columnNamesMaster) > len(rows) {
+				runtimes := 0
+				for runtimes == (len(columnNamesMaster) - len(rows)) {
+					fmt.Printf("looping %d", runtimes)
+					rows = append(rows, "")
+					runtimes++
+				}
+			}
+			//fmt.Println("writing line")
 			err = csvData.Write(rows)
 			if err != nil {
 				fmt.Println(err)
@@ -84,13 +153,11 @@ func DataStream() string {
 		if err := csvData.Error(); err != nil {
 			panic(err)
 		}
-		fmt.Println("Ready to convert")
-		log.Println(time.Since(start))
 		MatrixData = CSVtoJSON(strings.NewReader(buffer.String()))
 		fmt.Println("Done processing")
 	}
 	fmt.Println("exiting Datastream function.")
-	fmt.Println(MatrixData.String())
+	//fmt.Println(MatrixData.String())
 
 	return strings.ReplaceAll(MatrixData.String(), `\"`, "")
 }
@@ -107,6 +174,7 @@ func trimQuote(s string) string {
 
 func CSVtoJSON(importcsvdata io.Reader) *gabs.Container {
 	csvdata := csv.NewReader(importcsvdata)
+	csvdata.FieldsPerRecord = -1
 	records, err := csvdata.ReadAll()
 	if err != nil {
 		log.Fatalln(err)
@@ -126,9 +194,6 @@ func CSVtoJSON(importcsvdata io.Reader) *gabs.Container {
 			jsonEdgePart := gabs.New()
 			connectionData := gabs.New()
 			connectionData.Array("connectionData")
-			//realJsonEdgePart := gabs.New()
-			//realJsonEdgePart.Array("data")
-
 			for fieldnum, field := range row {
 				tempsrcjson := gabs.New()
 				tempdstjson := gabs.New()
