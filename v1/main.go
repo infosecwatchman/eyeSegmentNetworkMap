@@ -115,7 +115,6 @@ func Query(w http.ResponseWriter, r *http.Request) {
 		}
 	*/
 	fmt.Fprint(w, eyeSegmentAPI.GetFilter())
-
 }
 
 func main() {
