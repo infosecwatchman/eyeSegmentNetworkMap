@@ -436,6 +436,7 @@ function useSuggestion(e) {
   }
   function submitted(event) {
     event.preventDefault();
+    progressBar(true)
     let filters = []
     if (formInput.value.includes(",")) {
       var queryArray = formInput.value.split(",")
@@ -445,7 +446,7 @@ function useSuggestion(e) {
     } else {
       filters.push(formInput.value.trim())
     }
-    progressBar(true)
+    
     error = false
     errorText = ""
     let params = {};
@@ -507,6 +508,13 @@ function useSuggestion(e) {
       };
       fetch( '/query', options ).then( response => response.json() );
       //chart.container("container").draw();
+      containerObject = document.getElementById("contain");
+      anyChartObject = containerObject.children[1];
+      if (anyChartObject) {
+        anyChartObject.remove();
+      }
+      loadchart();
+      /*
       setTimeout(function() {
         anychart.data.set([
           {x: "A", value: 200},
@@ -514,6 +522,7 @@ function useSuggestion(e) {
           {x: "C", value: 250},
         ])
       } ,1500);
+      */
     }
   }
 
