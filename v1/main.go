@@ -30,7 +30,7 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 	//splits out the port number
 	addr := strings.Split(r.RemoteAddr, ":")[0]
 	// basically checks for localhost which defaults to ipv6 and returns this bracket
-	if addr == "[" {
+	if addr == "[" || addr == "127.0.0.1" {
 		addr = "10.9.9.42"
 	}
 	varmap := map[string]interface{}{
