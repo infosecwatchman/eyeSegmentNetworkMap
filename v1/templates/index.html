@@ -435,7 +435,9 @@
     }
   }
   function submitted(event) {
-    event.preventDefault();
+    if (event) {
+      event.preventDefault();
+    }
     progressBar(true)
     let filters = []
     if (formInput.value.includes(",")) {
@@ -549,10 +551,9 @@
     chart.edges().labels().enabled(document.getElementById("edgeLabels").checked);
     chart.nodes().labels().enabled(document.getElementById("objectLabels").checked);
   }
-
   anychart.onDocumentReady(function () {
-    progressBar(true)
-    submitted()
+    progressBar(true);
+    submitted();
   });
   function loadchart() {
     anychart.data.loadJsonFile("/data", function (data) {
