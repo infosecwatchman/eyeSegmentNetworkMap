@@ -330,10 +330,10 @@
   const suggestionList = document.querySelector('.suggestionDropdown ul li');
 
   const words = [
-    "srcip:,",
-    "srcgrp:,",
-    "dstip:,",
-    "dstgrp:,"
+    "srcip:",
+    "srcgrp:",
+    "dstip:",
+    "dstgrp:"
   ]
   //function submitted(event) {
   //  event.preventDefault();
@@ -342,8 +342,10 @@
   //  win.focus();
   //}
   function appendInput() {
-    if (formSelect.children[0].value) {
-      formInput.value = formInput.value + formSelect.children[0].value + ",";
+    if (formSelect.children[0].value.slice(-1) == ",") {
+      formInput.value = formInput.value + formSelect.children[0].value;
+    } else {
+      formInput.value = formInput.value + "," +formSelect.children[0].value;
     }
   }
 
@@ -443,7 +445,9 @@
     if (formInput.value.includes(",")) {
       var queryArray = formInput.value.split(",")
       queryArray.forEach(function (term) {
-        filters.push(term.trim())
+        if (term) {
+          filters.push(term.trim())
+        }
       });
     } else {
       filters.push(formInput.value.trim())
@@ -489,13 +493,13 @@
               //  params.dstnet = filter[1].trim()
               //  break
         default:
-          console.log("here")
           error = true
           errorText = errorText + "Error: '" + filter[0] + "' is not a valid filter.<br>"
           break
       }
     });
     if(error) {
+      progressBar(false)
       document.getElementById("toast-text").innerHTML = errorText + '<a href="/documentation">Query filters documentation</a>'
       $("#myToast").toast("show");
       $(".toast").css("z-index", "1000");
