@@ -27,7 +27,16 @@ type Response struct {
 var templates *template.Template
 
 func indexPage(w http.ResponseWriter, r *http.Request) {
-	templates.ExecuteTemplate(w, "index.html", nil)
+	//splits out the port number
+	addr := strings.Split(r.RemoteAddr, ":")[0]
+	// basically checks for localhost which defaults to ipv6 and returns this bracket
+	if addr == "[" {
+		addr = "10.9.9.42"
+	}
+	varmap := map[string]interface{}{
+		"SOURCE_IP": addr,
+	}
+	templates.ExecuteTemplate(w, "index.html", varmap)
 }
 
 func testDataPage(w http.ResponseWriter, r *http.Request) {

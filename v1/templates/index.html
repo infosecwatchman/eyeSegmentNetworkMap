@@ -201,7 +201,7 @@
   <form role="search" id="form">
     <div class="search-container">
       <!--<div class="input-container">-->
-      <input type="search" id="query" name="query"
+      <input type="search" id="query" value="srcip:{{.SOURCE_IP}}" name="query"
              placeholder="Search..."
              aria-label="Search through site content">
       <!--<span id="suggestion"></span>-->
@@ -446,7 +446,6 @@
     } else {
       filters.push(formInput.value.trim())
     }
-
     error = false
     errorText = ""
     let params = {};
@@ -553,7 +552,7 @@
 
   anychart.onDocumentReady(function () {
     progressBar(true)
-    loadchart()
+    submitted()
   });
   function loadchart() {
     anychart.data.loadJsonFile("/data", function (data) {
