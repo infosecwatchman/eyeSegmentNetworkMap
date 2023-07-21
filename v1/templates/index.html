@@ -440,6 +440,7 @@
     if (event) {
       event.preventDefault();
     }
+   
     progressBar(true)
     let filters = []
     if (formInput.value.includes(",")) {
@@ -512,23 +513,12 @@
         body: JSON.stringify( params )
       };
       fetch( '/query', options ).then( response => response.json() );
-      //chart.container("container").draw();
       containerObject = document.getElementById("contain");
       anyChartObject = containerObject.children[1];
       if (anyChartObject) {
         anyChartObject.remove();
       }
       loadchart();
-      
-      /*
-      setTimeout(function() {
-        anychart.data.set([
-          {x: "A", value: 200},
-          {x: "B", value: 300},
-          {x: "C", value: 250},
-        ])
-      } ,1500);
-      */
     }
   }
 
@@ -561,12 +551,13 @@
   });
   function loadchart() {
     anychart.data.loadJsonFile("/data", function (data) {
+      
       // create a chart from the loaded data
       chart = anychart.graph(data);
 
       chart.container("contain");
       // set the title
-      chart.title("Network Graph showing network connection data.");
+      chart.title("Now showing " + data["nodes"].length + " node connections");
       // configure the labels of nodes
       chart.nodes().labels().format("{%id}");
       chart.nodes().labels().fontSize(12);
