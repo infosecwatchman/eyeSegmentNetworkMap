@@ -152,7 +152,9 @@ func DataStream() string {
 		if err := csvData.Error(); err != nil {
 			panic(err)
 		}
+		start := time.Now()
 		MatrixData = CSVtoJSON(strings.NewReader(buffer.String()))
+		fmt.Printf("Converting JSON: %s\n", time.Since(start))
 	}
 	fmt.Println("exiting Datastream function.")
 	//fmt.Println(MatrixData.String())
@@ -182,6 +184,7 @@ func CSVtoJSON(importcsvdata io.Reader) *gabs.Container {
 	fulljson.Array("nodes")
 	var edges []edge
 	var headers []string
+	waitgroup := sync.WaitGroup{}
 	for rownum, row := range records {
 		//fmt.Printf("%d: %s\n", row, record)
 		if rownum == 0 {
@@ -196,48 +199,72 @@ func CSVtoJSON(importcsvdata io.Reader) *gabs.Container {
 				tempsrcjson := gabs.New()
 				tempdstjson := gabs.New()
 				for columnnum, column := range headers {
-
-					if columnnum == fieldnum {
-						if strings.Contains(column, "Source") {
-							if !strings.Contains(column, "IP") || !strings.Contains(column, "DNS") {
-								tempsrcjson.Set(field, strings.ReplaceAll(column, "Source_", ""))
+					waitgroup.Add(1)
+					go func(columnnum int, column string, headers []string) {
+						var m sync.Mutex
+						defer waitgroup.Done()
+						if columnnum == fieldnum {
+							if strings.Contains(column, "Source") {
+								if !strings.Contains(column, "IP") || !strings.Contains(column, "DNS") {
+									m.Lock()
+									tempsrcjson.Set(field, strings.ReplaceAll(column, "Source_", ""))
+									m.Unlock()
+								}
+							}
+							if strings.Contains(column, "Destination") {
+								if !strings.Contains(column, "IP") || !strings.Contains(column, "DNS") {
+									m.Lock()
+									tempdstjson.Set(field, strings.ReplaceAll(column, "Destination_", ""))
+									m.Unlock()
+								}
 							}
 						}
-						if strings.Contains(column, "Destination") {
-							if !strings.Contains(column, "IP") || !strings.Contains(column, "DNS") {
-								tempdstjson.Set(field, strings.ReplaceAll(column, "Destination_", ""))
-							}
-						}
-					}
+					}(columnnum, column, headers)
 				}
 				for columnnum, column := range headers {
-					if columnnum == fieldnum {
-						if column == "Source_IP" {
-							regex, _ := regexp.Compile(fmt.Sprintf(`"id":"%s"`, field))
-							if !regex.MatchString(fulljson.Search("nodes").String()) {
-								jsonDSTNodePart.Set(field, "id")
+					waitgroup.Add(1)
+					go func(columnnum int, column string, headers []string) {
+						var m sync.Mutex
+						defer waitgroup.Done()
+						if columnnum == fieldnum {
+							if column == "Source_IP" {
+								regex, _ := regexp.Compile(fmt.Sprintf(`"id":"%s"`, field))
+								m.Lock()
+								if !regex.MatchString(fulljson.Search("nodes").String()) {
+									jsonDSTNodePart.Set(field, "id")
+								}
+								m.Unlock()
 							}
-						}
-						if column == "Destination_IP" {
-							regex, _ := regexp.Compile(fmt.Sprintf(`"id":"%s"`, field))
-							if !regex.MatchString(fulljson.Search("nodes").String()) {
-								jsonSRCNodePart.Set(field, "id")
+							if column == "Destination_IP" {
+								regex, _ := regexp.Compile(fmt.Sprintf(`"id":"%s"`, field))
+								m.Lock()
+								if !regex.MatchString(fulljson.Search("nodes").String()) {
+									jsonSRCNodePart.Set(field, "id")
+								}
+								m.Unlock()
 							}
-						}
-						if column == "Source_IP" {
-							jsonEdgePart.Set(field, "from")
-						}
-						if column == "Destination_IP" {
-							jsonEdgePart.Set(field, "to")
-						}
-						if !strings.Contains(column, "Destination") && !strings.Contains(column, "Source") {
-							jsonEdgePart.Set(field, column)
-						}
-						jsonDSTNodePart.Merge(tempsrcjson)
-						jsonSRCNodePart.Merge(tempdstjson)
+							if column == "Source_IP" {
+								m.Lock()
+								jsonEdgePart.Set(field, "from")
+								m.Unlock()
+							}
+							if column == "Destination_IP" {
+								m.Lock()
+								jsonEdgePart.Set(field, "to")
+								m.Unlock()
+							}
+							if !strings.Contains(column, "Destination") && !strings.Contains(column, "Source") {
+								m.Lock()
+								jsonEdgePart.Set(field, column)
+								m.Unlock()
+							}
 
-					}
+						}
+					}(columnnum, column, headers)
 				}
+				waitgroup.Wait()
+				jsonDSTNodePart.Merge(tempsrcjson)
+				jsonSRCNodePart.Merge(tempdstjson)
 			}
 			from := jsonEdgePart.S("from").Data()
 			to := jsonEdgePart.S("to").Data()
